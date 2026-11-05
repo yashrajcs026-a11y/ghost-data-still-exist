@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ghost Data Still Exists | Deletion Audit</title>
+<style>
+:root{--bg:#0b1020;--panel:#131b2e;--panel2:#19243a;--line:#283650;--text:#edf3ff;--muted:#9aabc5;--green:#42d6a0;--red:#ff777e;--amber:#f5c66b;--blue:#82b4ff}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#172744 0,#0b1020 52%);color:var(--text);font:15px/1.5 Inter,Segoe UI,Arial,sans-serif;min-height:100vh}
+.wrap{max-width:1180px;margin:auto;padding:32px 22px 60px}.top{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;margin-bottom:28px}
+.eyebrow{color:var(--green);font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:700}
+h1{font-size:clamp(28px,4vw,42px);line-height:1.1;margin:8px 0}.sub{color:var(--muted);max-width:680px;margin:10px 0 0}
+.upload{border:1px solid var(--line);background:var(--panel);padding:13px 16px;border-radius:12px;min-width:220px}
+.upload label{display:block;font-size:12px;color:var(--muted);margin-bottom:7px}.upload input{width:100%;color:var(--muted);font-size:12px}
+.notice{display:flex;align-items:center;gap:10px;background:#172b32;border:1px solid #28554c;color:#c6f5e4;border-radius:12px;padding:12px 15px;margin:20px 0 24px;font-size:13px}
+.dot{width:8px;height:8px;background:var(--green);border-radius:50%;flex:none}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
+.card,.panel{background:linear-gradient(145deg,var(--panel),#101829);border:1px solid var(--line);border-radius:16px}
+.card{padding:19px}.card .label{color:var(--muted);font-size:13px}.num{font-size:34px;font-weight:750;letter-spacing:-1px;margin-top:5px}.green{color:var(--green)}.red{color:var(--red)}.amber{color:var(--amber)}
+.barbox{padding:18px 20px;margin-bottom:20px}.barhead{display:flex;justify-content:space-between;color:var(--muted);font-size:13px;margin-bottom:11px}.bar{height:10px;background:#29354b;border-radius:20px;overflow:hidden;display:flex}.bar .done{background:var(--green)}.bar .pending{background:var(--red)}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:16px 18px;border-bottom:1px solid var(--line)}
+input[type=search],select{background:#0d1526;border:1px solid var(--line);color:var(--text);padding:10px 12px;border-radius:9px;outline:none}
+input[type=search]{flex:1;min-width:180px}select{min-width:145px}
+.panel{overflow:hidden}.tablewrap{overflow-x:auto}table{border-collapse:collapse;width:100%;min-width:600px}th,td{text-align:left;padding:13px 18px;border-bottom:1px solid #202d43}th{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;background:#111a2b}td{font-size:13px}tbody tr{cursor:pointer}tbody tr:hover{background:#19263d}.status{display:inline-block;padding:4px 9px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.3px}.status.COMPLETE{color:var(--green);background:#15392f}.status.INCOMPLETE{color:var(--red);background:#40232d}.status.NOT_APPLICABLE{color:var(--amber);background:#3d3420}
+.empty{padding:36px;text-align:center;color:var(--muted)}.foot{color:var(--muted);font-size:12px;margin-top:15px}
+.modalback{position:fixed;inset:0;background:#050914c9;display:none;align-items:center;justify-content:center;padding:18px;z-index:5}.modalback.show{display:flex}.modal{background:#111b2d;border:1px solid var(--line);border-radius:17px;width:min(820px,100%);max-height:88vh;overflow:auto;padding:22px}
+.modalhead{display:flex;justify-content:space-between;align-items:center;gap:15px}.modal h2{margin:0}.close{background:#26344b;color:white;border:0;border-radius:8px;padding:8px 12px;cursor:pointer}
+.detailmeta{color:var(--muted);font-size:13px;margin:8px 0 20px}.steps{display:grid;gap:10px}.step{border:1px solid var(--line);background:#172238;border-radius:11px;padding:13px}.stephead{display:flex;justify-content:space-between;gap:10px;margin-bottom:7px}.phase{font-size:10px;letter-spacing:1px;color:var(--blue);font-weight:700}.step p{margin:3px 0;color:var(--muted);font-size:12px;overflow-wrap:anywhere}.step strong{font-size:13px}
+@media(max-width:700px){.top{display:block}.upload{margin-top:18px}.stats{grid-template-columns:1fr}.wrap{padding:24px 14px}.num{font-size:29px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Privacy compliance · Audit dashboard</div>
+      <h1>Ghost Data Still Exists</h1>
+      <p class="sub">Deletion request audit monitor. Review resource-level evidence, pending remediation and verification steps across submitted cases.</p>
+    </div>
+    <div class="upload">
+      <label for="file">LOAD PROJECT OUTPUT · output.csv</label>
+      <input id="file" type="file" accept=".csv,text/csv">
+    </div>
+  </header>
+  <div class="notice"><span class="dot"></span><span id="loadmsg">Upload your generated <b>output.csv</b> to populate the dashboard. Your file stays in this browser session.</span></div>
+  <section class="stats">
+    <div class="card"><div class="label">Total deletion requests</div><div class="num" id="total">—</div></div>
+    <div class="card"><div class="label">Complete</div><div class="num green" id="complete">—</div></div>
+    <div class="card"><div class="label">Incomplete</div><div class="num red" id="incomplete">—</div></div>
+  </section>
+  <section class="panel barbox">
+    <div class="barhead"><span>Case completion overview</span><span id="percent">Waiting for CSV</span></div>
+    <div class="bar"><div class="done" id="donebar" style="width:0%"></div><div class="pending" id="pendingbar" style="width:0%"></div></div>
+  </section>
+  <section class="panel">
+    <div class="toolbar">
+      <input id="search" type="search" placeholder="Search by case ID…">
+      <select id="filter"><option value="ALL">All statuses</option><option value="COMPLETE">Complete</option><option value="INCOMPLETE">Incomplete</option><option value="NOT_APPLICABLE">Not applicable</option></select>
+    </div>
+    <div class="tablewrap">
+      <table><thead><tr><th>Case ID</th><th>Status</th><th>Audit steps</th><th>Findings</th><th>Remediations</th></tr></thead><tbody id="rows"><tr><td colspan="5" class="empty">Upload output.csv to view audit cases.</td></tr></tbody></table>
+    </div>
+  </section>
+  <p class="foot">Select any case to inspect its generated audit steps. Statuses reflect the current pipeline output and are not a substitute for manual review.</p>
+</div>
+<div class="modalback" id="modalback">
+  <div class="modal">
+    <div class="modalhead"><h2 id="modalTitle">Case details</h2><button class="close" id="close">Close ✕</button></div>
+    <div class="detailmeta" id="modalMeta"></div>
+    <div class="steps" id="stepList"></div>
+  </div>
+</div>
+<script>
+let cases=[];
+function parseCSV(text){
+  const rows=[];let row=[],field="",quoted=false;
+  for(let i=0;i<text.length;i++){const c=text[i],n=text[i+1];
+    if(quoted){if(c==='"'&&n==='"'){field+='"';i++;}else if(c==='"'){quoted=false;}else{field+=c;}}
+    else if(c==='"'){quoted=true;}else if(c===","){row.push(field);field="";}
+    else if(c==="\n"){row.push(field);rows.push(row);row=[];field="";}
+    else if(c!=="\r"){field+=c;}
+  }
+  if(field.length||row.length){row.push(field);rows.push(row);}
+  return rows;
+}
+function countPhase(steps,phase){return steps.filter(s=>s.phase===phase).length;}
+function safeText(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function render(){
+  const q=document.getElementById("search").value.trim().toLowerCase(),f=document.getElementById("filter").value;
+  const filtered=cases.filter(c=>(f==="ALL"||c.deletion_status===f)&&c.case_id.toLowerCase().includes(q));
+  document.getElementById("rows").innerHTML=filtered.length?filtered.map(c=>`<tr data-id="${safeText(c.case_id)}"><td><b>${safeText(c.case_id)}</b></td><td><span class="status ${safeText(c.deletion_status)}">${safeText(c.deletion_status.replace("_"," "))}</span></td><td>${c.steps.length}</td><td>${countPhase(c.steps,"FINDING")}</td><td>${countPhase(c.steps,"REMEDIATION")}</td></tr>`).join(""):`<tr><td colspan="5" class="empty">No matching cases.</td></tr>`;
+}
+function showCase(id){
+  const c=cases.find(x=>x.case_id===id);if(!c)return;
+  document.getElementById("modalTitle").textContent=c.case_id;
+  document.getElementById("modalMeta").innerHTML=`<span class="status ${safeText(c.deletion_status)}">${safeText(c.deletion_status)}</span> · ${c.steps.length} total steps`;
+  const list=document.getElementById("stepList");
+  list.innerHTML=c.steps.length?c.steps.map(s=>`<div class="step"><div class="stephead"><strong>${safeText(s.operation||"Unspecified operation")}</strong><span class="phase">${safeText(s.phase||"STEP")}</span></div><p>Resource: ${safeText(s.resource_id||"—")}</p><p>System: ${safeText(s.system_id||"—")}</p><p>State: ${safeText(s.state||"—")} · Evidence: ${safeText(s.evidence_id||"Not linked")}</p></div>`).join(""):`<div class="empty">No audit steps were generated for this case. This indicates an evidence/linkage gap that may need review.</div>`;
+  document.getElementById("modalback").classList.add("show");
+}
+document.getElementById("file").addEventListener("change",async e=>{
+ const file=e.target.files[0];if(!file)return;
+ try{
+  const raw=parseCSV(await file.text());const headers=raw.shift().map(x=>x.trim());
+  const ix=Object.fromEntries(headers.map((h,i)=>[h,i]));
+  if(ix.case_id===undefined||ix.deletion_status===undefined||ix.steps_json===undefined)throw Error("CSV must contain case_id, deletion_status and steps_json columns.");
+  cases=raw.filter(r=>r.length>=headers.length).map(r=>({case_id:r[ix.case_id],deletion_status:r[ix.deletion_status],steps:JSON.parse(r[ix.steps_json]||"[]")})).filter(c=>c.case_id);
+  const total=cases.length,done=cases.filter(c=>c.deletion_status==="COMPLETE").length,pending=cases.filter(c=>c.deletion_status==="INCOMPLETE").length,na=cases.filter(c=>c.deletion_status==="NOT_APPLICABLE").length;
+  document.getElementById("total").textContent=total;document.getElementById("complete").textContent=done;document.getElementById("incomplete").textContent=pending;
+  const pct=total?Math.round(done/total*100):0;document.getElementById("donebar").style.width=pct+"%";document.getElementById("pendingbar").style.width=(total?pending/total*100:0)+"%";
+  document.getElementById("percent").textContent=`${pct}% complete · ${na} not applicable`;
+  document.getElementById("loadmsg").textContent=`Loaded ${file.name} successfully · ${total} cases parsed.`;
+  render();
+ }catch(err){document.getElementById("loadmsg").textContent="Could not load CSV: "+err.message;}
+});
+document.getElementById("search").addEventListener("input",render);
+document.getElementById("filter").addEventListener("change",render);
+document.getElementById("rows").addEventListener("click",e=>{const tr=e.target.closest("tr[data-id]");if(tr)showCase(tr.dataset.id);});
+document.getElementById("close").addEventListener("click",()=>document.getElementById("modalback").classList.remove("show"));
+document.getElementById("modalback").addEventListener("click",e=>{if(e.target.id==="modalback")e.currentTarget.classList.remove("show");});
+</script>
+</body>
+</html>
